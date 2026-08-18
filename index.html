@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>삼각형의 외심 - 방탈출 탐구 미션</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library for Victory Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        math: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        escape: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#38bdf8',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .canvas-container {
+            touch-action: none;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        @keyframes unlock-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.8); }
+        }
+        .glow-active {
+            animation: unlock-glow 2s infinite;
+        }
+        .step-active {
+            border-color: #38bdf8;
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Escape Header & Stage Progress -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 text-white p-2.5 rounded-2xl shadow-lg flex items-center justify-center w-11 h-11">
+                    <i class="fa-solid fa-key text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg font-black tracking-tight text-white">외심의 비밀: 방탈출 미션</h1>
+                        <span id="sound-toggle-btn" onclick="toggleAudio()" class="cursor-pointer text-slate-400 hover:text-amber-400 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700 transition">
+                            <i class="fa-solid fa-volume-high" id="sound-icon"></i> 효과음 ON
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400">중2 수학 도형의 성질 - 직접 작동해보며 4단계를 해금하세요!</p>
+                </div>
+            </div>
+
+            <!-- Stage Selection Tabs -->
+            <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <button id="tab-stage-1" onclick="switchStage(1)" class="flex-1 md:flex-none px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 bg-sky-500 text-white shadow-md whitespace-nowrap">
+                    <i class="fa-solid fa-lock-open text-xs"></i> 1단계: 외심 만들기
+                </button>
+                
+                <button id="tab-stage-2" onclick="switchStage(2)" class="flex-1 md:flex-none px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 whitespace-nowrap">
+                    <i id="lock-icon-2" class="fa-solid fa-lock text-xs text-rose-400"></i> 2단계: 개념 확인
+                </button>
+
+                <button id="tab-stage-3" onclick="switchStage(3)" class="flex-1 md:flex-none px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 whitespace-nowrap">
+                    <i id="lock-icon-3" class="fa-solid fa-lock text-xs text-rose-400"></i> 3단계: 외심의 위치
+                </button>
+
+                <button id="tab-stage-4" onclick="switchStage(4)" class="flex-1 md:flex-none px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 whitespace-nowrap">
+                    <i id="lock-icon-4" class="fa-solid fa-lock text-xs text-rose-400"></i> 4단계: 실생활 응용
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- LEFT PANEL: Stage Task & Escape Quizzes -->
+        <section class="lg:col-span-5 flex flex-col gap-4 order-2 lg:order-1">
+
+            <!-- STAGE 1 CONTENT BOX -->
+            <div id="stage-card-1" class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-400 bg-sky-950/80 px-3 py-1 rounded-full border border-sky-800">
+                        STAGE 01
+                    </span>
+                    <span id="stage1-status-badge" class="text-xs font-bold text-amber-400 flex items-center gap-1">
+                        <i class="fa-solid fa-spinner animate-spin"></i> 탐구 진행 중
+                    </span>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-compass text-sky-400"></i> 1단계 미션: 직접 외심 만들기
+                        </h2>
+                        <button onclick="resetStage1Canvas()" class="text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-1 shrink-0">
+                            <i class="fa-solid fa-rotate-right"></i> 다시 그리기
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        우측 캔버스에서 아래의 순서대로 직접 상호작용하며 외심을 완성해 보세요!
+                    </p>
+                </div>
+
+                <!-- Step-by-Step Interactive Guide -->
+                <div class="space-y-2 text-xs">
+                    <div id="step-guide-0" class="p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between">
+                        <span class="flex items-center gap-2 text-slate-200">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-sky-400">1</span>
+                            꼭짓점 A, B, C 찍기
+                        </span>
+                        <span id="step-badge-0" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">0/3</span>
+                    </div>
+
+                    <div id="step-guide-1" class="p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50">
+                        <span class="flex items-center gap-2 text-slate-200">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-amber-400">2</span>
+                            세 변의 수직이등분선 그리기
+                        </span>
+                        <span id="step-badge-1" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">0/3</span>
+                    </div>
+
+                    <div id="step-guide-2" class="p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50">
+                        <span class="flex items-center gap-2 text-slate-200">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-rose-400">3</span>
+                            수직이등분선의 교점(외심 O) 발견
+                        </span>
+                        <span id="step-badge-2" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">대기</span>
+                    </div>
+
+                    <div id="step-guide-3" class="p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50">
+                        <span class="flex items-center gap-2 text-slate-200">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-purple-400">4</span>
+                            거리선(OA, OB, OC) 연결하기
+                        </span>
+                        <span id="step-badge-3" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">0/3</span>
+                    </div>
+                </div>
+
+                <!-- Stage 1 Quiz Box -->
+                <div class="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="text-xs font-bold text-sky-300 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-question"></i> 탐구 질문 1</span>
+                    </div>
+                    <p class="text-xs text-slate-200 leading-normal">
+                        "외심 O에서 세 꼭짓점에 이르는 거리 OA, OB, OC는 어떤 관계를 가질까요?"
+                    </p>
+                    <div class="space-y-1.5 text-xs">
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                            <input type="radio" name="quiz1" value="equal" class="text-sky-500 focus:ring-sky-400">
+                            <span>세 거리가 모두 같다 (OA = OB = OC)</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                            <input type="radio" name="quiz1" value="two_equal" class="text-sky-500 focus:ring-sky-400">
+                            <span>두 거리만 같다</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                            <input type="radio" name="quiz1" value="different" class="text-sky-500 focus:ring-sky-400">
+                            <span>세 거리가 모두 다르다</span>
+                        </label>
+                    </div>
+                    <button onclick="checkStage1Quiz()" class="w-full py-2.5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-key text-xs"></i> 정답 확인 및 2단계 해금하기
+                    </button>
+                </div>
+
+                <!-- Stage 1 Success Result Banner -->
+                <div id="stage1-result-box" class="hidden p-4 rounded-xl bg-emerald-950/80 border border-emerald-600/80 text-emerald-200 space-y-3">
+                    <div class="flex items-center gap-2 font-bold text-sm text-emerald-400">
+                        <i class="fa-solid fa-circle-check text-base"></i> 정답입니다! 1단계 탐구 완료
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        외심 O에서 세 꼭짓점에 이르는 거리는 모두 <b>외접원의 반지름</b>으로 같습니다!<br>
+                        <span class="inline-block mt-1 text-emerald-300 font-semibold">🔒 2단계 버튼을 눌러 이동한 뒤, 암호를 입력하여 다음 미션을 진행하세요. (초성 힌트: <span class="text-amber-300 font-bold">ㅎㅂ</span>)</span>
+                    </p>
+                    <button onclick="switchStage(2)" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1">
+                        2단계로 이동하기 <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STAGE 2 CONTENT BOX: 개념 확인 (빈칸 채우기) -->
+            <div id="stage-card-2" class="hidden bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-800">
+                        STAGE 02
+                    </span>
+                    <span id="stage2-status-badge" class="text-xs font-bold text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-rose-400"></i> 잠김
+                    </span>
+                </div>
+
+                <!-- Lock Screen for Stage 2 with Initial Consonant Hint -->
+                <div id="stage2-lock-overlay" class="py-8 text-center space-y-4">
+                    <div class="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 text-emerald-400 text-2xl">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">2단계 잠금 상태</h3>
+                        <p class="text-xs text-slate-400 mt-1">1단계 탐구를 완료한 뒤 암호를 입력하여 해금하세요.</p>
+                        <!-- Initial Consonant Hint Badge -->
+                        <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950/80 border border-amber-600/60 rounded-full text-xs font-bold text-amber-300">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> 초성 힌트: <span class="tracking-widest text-white font-extrabold bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">ㅎㅂ</span>
+                        </div>
+                    </div>
+                    <div class="max-w-xs mx-auto space-y-2 pt-2">
+                        <input type="text" id="stage2-password-input" placeholder="2단계 암호 입력 (힌트: ㅎㅂ)" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white text-center focus:outline-none focus:border-emerald-400">
+                        <button onclick="unlockStageWithPassword(2)" class="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition shadow-md">
+                            2단계 해금하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unlocked Content for Stage 2 -->
+                <div id="stage2-unlocked-content" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-book-open text-emerald-400"></i> 2단계 미션: 외심 개념 빈칸 채우기
+                        </h2>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            삼각형의 외심에 관한 핵심 개념 문장의 빈칸 알맞은 단어를 작성해 보세요.
+                        </p>
+                    </div>
+
+                    <!-- Blank Filling Quizzes -->
+                    <div class="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-4 text-xs">
+                        <!-- Q1 -->
+                        <div class="space-y-1.5">
+                            <label class="font-bold text-emerald-300 block">Q1. 외심의 정의</label>
+                            <p class="text-slate-200 leading-relaxed">
+                                "삼각형의 외심은 세 변의 (<input type="text" id="blank-q1" placeholder="빈칸" class="w-28 px-2 py-1 mx-1 bg-slate-950 border border-slate-700 rounded text-center text-emerald-300 focus:outline-none focus:border-emerald-400 font-bold">)의 교점이다."
+                            </p>
+                        </div>
+
+                        <!-- Q2 -->
+                        <div class="space-y-1.5 border-t border-slate-800 pt-3">
+                            <label class="font-bold text-emerald-300 block">Q2. 외심의 성질</label>
+                            <p class="text-slate-200 leading-relaxed">
+                                "삼각형의 외심에서 세 (<input type="text" id="blank-q2" placeholder="빈칸" class="w-24 px-2 py-1 mx-1 bg-slate-950 border border-slate-700 rounded text-center text-emerald-300 focus:outline-none focus:border-emerald-400 font-bold">)에 이르는 거리는 모두 같다."
+                            </p>
+                        </div>
+
+                        <!-- Q3 -->
+                        <div class="space-y-1.5 border-t border-slate-800 pt-3">
+                            <label class="font-bold text-emerald-300 block">Q3. 외접원의 개념</label>
+                            <p class="text-slate-200 leading-relaxed">
+                                "외심을 중심으로 하고 세 꼭짓점을 지나는 원을 (<input type="text" id="blank-q3" placeholder="빈칸" class="w-24 px-2 py-1 mx-1 bg-slate-950 border border-slate-700 rounded text-center text-emerald-300 focus:outline-none focus:border-emerald-400 font-bold">)이라고 한다."
+                            </p>
+                        </div>
+
+                        <button onclick="checkStage2Quiz()" class="w-full mt-2 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-key text-xs"></i> 2단계 정답 확인하기
+                        </button>
+                    </div>
+
+                    <!-- Stage 2 Success Result Banner -->
+                    <div id="stage2-result-box" class="hidden p-4 rounded-xl bg-emerald-950/80 border border-emerald-600/80 text-emerald-200 space-y-3">
+                        <div class="flex items-center gap-2 font-bold text-sm text-emerald-400">
+                            <i class="fa-solid fa-circle-check text-base"></i> 정답입니다! 2단계 개념 탐구 완료
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            외심의 정확한 개념과 성질을 잘 파악했습니다!<br>
+                            <span class="inline-block mt-1 text-amber-300 font-semibold">🔒 3단계를 해금할 암호를 입력해 주세요. (초성 힌트: <span class="text-amber-300 font-bold">ㅅㄹ</span>)</span>
+                        </p>
+                        <button onclick="switchStage(3)" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1">
+                            3단계로 이동하기 <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 3 CONTENT BOX -->
+            <div id="stage-card-3" class="hidden bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-800">
+                        STAGE 03
+                    </span>
+                    <span id="stage3-status-badge" class="text-xs font-bold text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-rose-400"></i> 잠김
+                    </span>
+                </div>
+
+                <!-- Lock Screen for Stage 3 with Initial Consonant Hint -->
+                <div id="stage3-lock-overlay" class="py-8 text-center space-y-4">
+                    <div class="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 text-amber-400 text-2xl">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">3단계 잠금 상태</h3>
+                        <p class="text-xs text-slate-400 mt-1">2단계 탐구를 완료한 뒤 암호를 입력하여 해금하세요.</p>
+                        <!-- Initial Consonant Hint Badge -->
+                        <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950/80 border border-amber-600/60 rounded-full text-xs font-bold text-amber-300">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> 초성 힌트: <span class="tracking-widest text-white font-extrabold bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">ㅅㄹ</span>
+                        </div>
+                    </div>
+                    <div class="max-w-xs mx-auto space-y-2 pt-2">
+                        <input type="text" id="stage3-password-input" placeholder="3단계 암호 입력 (힌트: ㅅㄹ)" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white text-center focus:outline-none focus:border-amber-400">
+                        <button onclick="unlockStageWithPassword(3)" class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition shadow-md">
+                            3단계 해금하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unlocked Content for Stage 3 -->
+                <div id="stage3-unlocked-content" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-shapes text-amber-400"></i> 3단계 미션: 삼각형 모양과 외심의 위치
+                        </h2>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            우측 상단의 <b>[예각], [직각], [둔각]</b> 퀵 버튼이나 점을 드래그하여 삼각형의 모양을 변화시켜 보세요!
+                        </p>
+                    </div>
+
+                    <!-- Dynamic Location Indicator Box -->
+                    <div id="location-info-card" class="p-3.5 rounded-xl bg-slate-850 border border-slate-700 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400">실시간 판별 결과:</span>
+                            <span id="current-triangle-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-700">
+                                예각삼각형
+                            </span>
+                        </div>
+                        <div class="text-xs font-bold text-sky-300" id="current-location-text">
+                            외심(O)의 위치: 삼각형 내부
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-normal" id="current-location-desc">
+                            모든 각이 90° 미만일 때 외심 O는 삼각형 내부에 존재합니다.
+                        </p>
+                    </div>
+
+                    <!-- Stage 3 Quiz Box -->
+                    <div class="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-question"></i> 탐구 질문 3
+                        </div>
+                        <p class="text-xs text-slate-200 leading-normal">
+                            "삼각형이 <b class="text-amber-400">직각삼각형</b>일 때, 외심 O는 삼각형의 정확히 어디에 위치하나요?"
+                        </p>
+
+                        <div class="space-y-2">
+                            <input type="text" id="quiz3-input" placeholder="예: 삼각형의 내부" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400">
+                            <button onclick="checkStage3Quiz()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-key text-xs"></i> 3단계 정답 확인하기
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stage 3 Success Result Banner -->
+                    <div id="stage3-result-box" class="hidden p-4 rounded-xl bg-emerald-950/80 border border-emerald-600/80 text-emerald-200 space-y-3">
+                        <div class="flex items-center gap-2 font-bold text-sm text-emerald-400">
+                            <i class="fa-solid fa-circle-check text-base"></i> 정답입니다! 3단계 탐구 완료
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            직각삼각형의 외심은 항상 <b>빗변의 중점</b>에 위치하는 아주 중요한 성질이 있습니다!<br>
+                            <span class="inline-block mt-1 text-rose-300 font-semibold">🔒 4단계를 해금할 암호를 입력해 주세요. (초성 힌트: <span class="text-amber-300 font-bold">ㅂㅎ</span>)</span>
+                        </p>
+                        <button onclick="switchStage(4)" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1">
+                            4단계로 이동하기 <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 4 CONTENT BOX -->
+            <div id="stage-card-4" class="hidden bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-rose-400 bg-rose-950/80 px-3 py-1 rounded-full border border-rose-800">
+                        FINAL STAGE 04
+                    </span>
+                    <span id="stage4-status-badge" class="text-xs font-bold text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-rose-400"></i> 잠김
+                    </span>
+                </div>
+
+                <!-- Lock Screen for Stage 4 with Initial Consonant Hint -->
+                <div id="stage4-lock-overlay" class="py-8 text-center space-y-4">
+                    <div class="w-16 h-16 mx-auto bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 text-rose-400 text-2xl">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">4단계 잠금 상태</h3>
+                        <p class="text-xs text-slate-400 mt-1">3단계 탐구를 완료한 뒤 암호를 입력하여 해금하세요.</p>
+                        <!-- Initial Consonant Hint Badge -->
+                        <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950/80 border border-amber-600/60 rounded-full text-xs font-bold text-amber-300">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> 초성 힌트: <span class="tracking-widest text-white font-extrabold bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">ㅂㅎ</span>
+                        </div>
+                    </div>
+                    <div class="max-w-xs mx-auto space-y-2 pt-2">
+                        <input type="text" id="stage4-password-input" placeholder="4단계 암호 입력 (힌트: ㅂㅎ)" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white text-center focus:outline-none focus:border-rose-400">
+                        <button onclick="unlockStageWithPassword(4)" class="w-full py-2 bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs rounded-xl transition shadow-md">
+                            4단계 해금하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unlocked Content for Stage 4 -->
+                <div id="stage4-unlocked-content" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-rose-400"></i> 최종 응용 미션: 외심 마스터
+                        </h2>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            외심의 성질을 활용한 두 가지 실생활/수학 응용 문제를 해결하세요!
+                        </p>
+                    </div>
+
+                    <!-- Application Problem 1 -->
+                    <div class="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                        <div class="font-bold text-sky-300 flex items-center gap-1">
+                            <i class="fa-solid fa-building-shield"></i> 응용 문제 1 (실생활)
+                        </div>
+                        <p class="text-slate-200 leading-normal">
+                            "세 마을 A, B, C에서 <b>같은 거리</b>에 있는 곳에 소방서를 세우려고 합니다. 소방서의 위치는 삼각형 ABC의 무엇일까요?"
+                        </p>
+                        <input type="text" id="app-q1" placeholder="정답 입력 (예: 무게중심)" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-sky-400">
+                    </div>
+
+                    <!-- Application Problem 2 -->
+                    <div class="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                        <div class="font-bold text-purple-300 flex items-center gap-1">
+                            <i class="fa-solid fa-calculator"></i> 응용 문제 2 (수치 계산)
+                        </div>
+                        <p class="text-slate-200 leading-normal">
+                            "<b>빗변의 길이가 10cm</b>인 직각삼각형의 외접원 반지름은 몇 cm일까요?"
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="app-q2" placeholder="숫자만 입력" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-purple-400">
+                            <span class="text-slate-300 font-bold whitespace-nowrap">cm</span>
+                        </div>
+                    </div>
+
+                    <button onclick="checkStage4Quizzes()" class="w-full py-3 bg-gradient-to-r from-rose-500 via-purple-600 to-indigo-600 hover:opacity-90 text-white font-extrabold text-xs rounded-xl shadow-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-award text-sm"></i> 최종 정답 제출 및 방탈출 완료!
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT PANEL: Interactive Geometry Canvas & Controls -->
+        <section class="lg:col-span-7 flex flex-col gap-3 order-1 lg:order-2">
+
+            <!-- Controls Bar -->
+            <div class="bg-slate-900 p-3 rounded-2xl border border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-2 text-xs">
+                
+                <!-- Quick Preset Shape Buttons (Active in Stage 3/4) -->
+                <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-slate-400 mr-1 hidden sm:inline">모양 변형:</span>
+                    <button onclick="setTrianglePreset('acute')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold border border-slate-700 transition flex items-center gap-1">
+                        <i class="fa-solid fa-play -rotate-90 text-[10px]"></i> 예각
+                    </button>
+                    <button onclick="setTrianglePreset('right')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold border border-slate-700 transition flex items-center gap-1">
+                        <i class="fa-solid fa-square-full text-[9px]"></i> 직각
+                    </button>
+                    <button onclick="setTrianglePreset('obtuse')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-400 font-bold border border-slate-700 transition flex items-center gap-1">
+                        <i class="fa-solid fa-play text-[10px]"></i> 둔각
+                    </button>
+                </div>
+
+                <!-- Display Element Toggles -->
+                <div class="flex items-center gap-3">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer text-amber-300 font-medium">
+                        <input type="checkbox" id="toggle-bisectors" checked onchange="drawGeometry()" class="w-3.5 h-3.5 rounded text-amber-500 focus:ring-amber-400 bg-slate-950 border-slate-700">
+                        <span>수직이등분선</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer text-sky-300 font-medium">
+                        <input type="checkbox" id="toggle-circle" checked onchange="drawGeometry()" class="w-3.5 h-3.5 rounded text-sky-500 focus:ring-sky-400 bg-slate-950 border-slate-700">
+                        <span>외접원</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer text-purple-300 font-medium">
+                        <input type="checkbox" id="toggle-radii" checked onchange="drawGeometry()" class="w-3.5 h-3.5 rounded text-purple-500 focus:ring-purple-400 bg-slate-950 border-slate-700">
+                        <span>거리선</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="canvas-container relative bg-slate-900 rounded-2xl border border-slate-800 shadow-inner flex-1 min-h-[380px] md:min-h-[440px] flex flex-col overflow-hidden">
+                
+                <!-- Dynamic Helper Badge -->
+                <div class="absolute top-3 left-3 z-10 pointer-events-none">
+                    <span id="canvas-prompt-badge" class="bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-semibold text-sky-300 border border-slate-800 shadow-md flex items-center gap-1.5">
+                        <i class="fa-solid fa-hand-pointer text-sky-400 animate-bounce"></i> 캔버스 위를 클릭하여 점 A를 찍으세요!
+                    </span>
+                </div>
+
+                <!-- Canvas Element -->
+                <canvas id="geoCanvas" class="w-full h-full cursor-crosshair block flex-1"></canvas>
+
+                <!-- On-canvas Radius Indicator -->
+                <div class="absolute bottom-3 right-3 z-10 pointer-events-none">
+                    <div class="bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-300 border border-slate-800 shadow-md">
+                        외접원 반지름 R = <span id="radius-val" class="text-sky-400 font-math">?</span> cm
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relocated Real-time Distance Measurements Card -->
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-md space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2 text-xs">
+                    <span class="font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-ruler-combined text-sky-400"></i> 실시간 수치 측정
+                    </span>
+                    <span class="font-math font-bold text-purple-400">OA = OB = OC</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 text-center text-xs">
+                    <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+                        <span class="text-[11px] font-bold text-indigo-400 block mb-0.5">거리 OA</span>
+                        <span id="dist-oa" class="text-base font-extrabold font-math text-slate-100">? cm</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+                        <span class="text-[11px] font-bold text-indigo-400 block mb-0.5">거리 OB</span>
+                        <span id="dist-ob" class="text-base font-extrabold font-math text-slate-100">? cm</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+                        <span class="text-[11px] font-bold text-indigo-400 block mb-0.5">거리 OC</span>
+                        <span id="dist-oc" class="text-base font-extrabold font-math text-slate-100">? cm</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Custom Alert Modal (Replaces standard window.alert) -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl relative text-center">
+            <div id="alert-icon-box" class="w-12 h-12 mx-auto rounded-full flex items-center justify-center text-2xl bg-amber-950 border border-amber-600 text-amber-400">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 id="alert-title" class="text-sm font-bold text-white">알림</h3>
+                <p id="alert-message" class="text-xs text-slate-300 mt-1 whitespace-pre-line leading-relaxed"></p>
+            </div>
+            <button onclick="closeAlertModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-600 transition">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- Escape Victory Modal -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border-2 border-emerald-500 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden">
+            <div class="w-20 h-20 mx-auto bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-lg text-slate-950 text-4xl font-extrabold animate-bounce">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div class="space-y-2">
+                <span class="text-xs font-extrabold tracking-widest text-emerald-400 uppercase bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800">
+                    MISSION COMPLETE
+                </span>
+                <h2 class="text-2xl font-black text-white">축하합니다! 방탈출 성공!</h2>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    삼각형의 외심에 관한 모든 비밀과 성질을 성공적으로 탐구 완료하였습니다. 당신은 공식 <b>'외심 마스터'</b>입니다!
+                </p>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left space-y-2 text-xs text-slate-300">
+                <div class="font-bold text-emerald-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clipboard-check"></i> 외심 탐구 핵심 요약 노트
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-slate-400 text-[11px]">
+                    <li>외심은 세 변의 <b>수직이등분선의 교점</b>이다.</li>
+                    <li>외심에서 세 꼭짓점에 이르는 거리는 모두 같다 (OA = OB = OC).</li>
+                    <li><b>직각삼각형의 외심</b>은 항상 <b>빗변의 중점</b>에 있다.</li>
+                </ul>
+            </div>
+
+            <button onclick="closeVictoryModal()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm rounded-xl shadow-lg transition">
+                탐구 계속하기 / 모달 닫기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Dynamic Geometry & Escape Game State Engine
+         */
+
+        let audioEnabled = true;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!audioEnabled || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'unlock') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            if (audioEnabled) {
+                btn.innerHTML = `<i class="fa-solid fa-volume-high" id="sound-icon"></i> 효과음 ON`;
+                btn.className = "cursor-pointer text-slate-400 hover:text-amber-400 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700 transition";
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-volume-xmark" id="sound-icon"></i> 효과음 OFF`;
+                btn.className = "cursor-pointer text-slate-500 text-xs px-2 py-0.5 rounded bg-slate-900 border border-slate-800 transition";
+            }
+        }
+
+        // Custom Modal Alert Function
+        function showAlert(msg, title = '알림', iconType = 'warning') {
+            const modal = document.getElementById('custom-alert-modal');
+            const msgEl = document.getElementById('alert-message');
+            const titleEl = document.getElementById('alert-title');
+            const iconBox = document.getElementById('alert-icon-box');
+
+            if (!modal || !msgEl || !titleEl || !iconBox) return;
+
+            titleEl.innerText = title;
+            msgEl.innerText = msg;
+
+            if (iconType === 'error' || iconType === 'wrong') {
+                iconBox.className = "w-12 h-12 mx-auto rounded-full flex items-center justify-center text-2xl bg-rose-950 border border-rose-600 text-rose-400";
+                iconBox.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+            } else {
+                iconBox.className = "w-12 h-12 mx-auto rounded-full flex items-center justify-center text-2xl bg-amber-950 border border-amber-600 text-amber-400";
+                iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            playSound('click');
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+
+        // Canvas & Geometry Variables
+        const canvas = document.getElementById('geoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let points = {
+            A: null,
+            B: null,
+            C: null
+        };
+
+        // Stage 1 Interactive State Machine Variables
+        let stage1PointCount = 0; // 0 to 3
+        let revealedBisectors = { AB: false, BC: false, CA: false };
+        let foundCircumcenter = false;
+        let revealedDistances = { OA: false, OB: false, OC: false };
+        let step4SelectedPoint = null; // Track first selected point in Step 4 ('A', 'B', 'C', or 'O')
+
+        let circumcenter = { x: 0, y: 0 };
+        let circumradius = 0;
+        let isDegenerate = false;
+        let triangleType = 'acute';
+
+        // Dragging & Interaction
+        let draggingPointKey = null;
+        let hoverPointKey = null;
+        const POINT_RADIUS = 10;
+        const SCALE_FACTOR = 40; // 40px = 1 cm
+
+        // Stage Unlocking State
+        let currentStage = 1;
+        let isStage2Unlocked = false;
+        let isStage3Unlocked = false;
+        let isStage4Unlocked = false;
+
+        function drawGeometry() {
+            if (!ctx) return;
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw subtle background grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            const gridSize = 30;
+            for (let x = 0; x < w; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let y = 0; y < h; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // Display options toggles
+            const showBisectorsCheck = document.getElementById('toggle-bisectors')?.checked ?? true;
+            const showCircleCheck = document.getElementById('toggle-circle')?.checked ?? true;
+            const showRadiiCheck = document.getElementById('toggle-radii')?.checked ?? true;
+
+            const activePoints = ['A', 'B', 'C'].filter(k => points[k] !== null);
+
+            if (activePoints.length === 3) {
+                computeGeometry();
+            }
+
+            // Draw Perpendicular Bisector helper line
+            function drawPerpendicularBisector(p1, p2, color) {
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const len = Math.hypot(dx, dy);
+                if (len === 0) return;
+
+                const nx = -dy / len;
+                const ny = dx / len;
+                const rayLen = Math.max(w, h) * 2;
+
+                ctx.save();
+                ctx.strokeStyle = color || '#f59e0b';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(midX - nx * rayLen, midY - ny * rayLen);
+                ctx.lineTo(midX + nx * rayLen, midY + ny * rayLen);
+                ctx.stroke();
+                ctx.restore();
+
+                // Right angle mark at midpoint
+                ctx.save();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.5;
+                const size = 8;
+                const ux = dx / len;
+                const uy = dy / len;
+                ctx.beginPath();
+                ctx.moveTo(midX + ux * size, midY + uy * size);
+                ctx.lineTo(midX + ux * size + nx * size, midY + uy * size + ny * size);
+                ctx.lineTo(midX + nx * size, midY + ny * size);
+                ctx.stroke();
+
+                // Double midpoint tick mark
+                const tickSize = 5;
+                const m1x = (p1.x + midX) / 2;
+                const m1y = (p1.y + midY) / 2;
+                ctx.beginPath();
+                ctx.moveTo(m1x + nx * tickSize, m1y + ny * tickSize);
+                ctx.lineTo(m1x - nx * tickSize, m1y - ny * tickSize);
+                ctx.stroke();
+
+                const m2x = (p2.x + midX) / 2;
+                const m2y = (p2.y + midY) / 2;
+                ctx.beginPath();
+                ctx.moveTo(m2x + nx * tickSize, m2y + ny * tickSize);
+                ctx.lineTo(m2x - nx * tickSize, m2y - ny * tickSize);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Draw Triangle Sides
+            if (activePoints.length >= 2) {
+                ctx.save();
+                ctx.lineWidth = 3;
+
+                if (points.A && points.B) {
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.moveTo(points.A.x, points.A.y);
+                    ctx.lineTo(points.B.x, points.B.y);
+                    ctx.stroke();
+                }
+                if (points.B && points.C) {
+                    ctx.strokeStyle = '#10b981';
+                    ctx.beginPath();
+                    ctx.moveTo(points.B.x, points.B.y);
+                    ctx.lineTo(points.C.x, points.C.y);
+                    ctx.stroke();
+                }
+                if (points.C && points.A) {
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.moveTo(points.C.x, points.C.y);
+                    ctx.lineTo(points.A.x, points.A.y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                if (activePoints.length === 3) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+                    ctx.beginPath();
+                    ctx.moveTo(points.A.x, points.A.y);
+                    ctx.lineTo(points.B.x, points.B.y);
+                    ctx.lineTo(points.C.x, points.C.y);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // Draw Perpendicular Bisectors
+            if (activePoints.length === 3) {
+                const canShowAB = (currentStage === 1 ? revealedBisectors.AB : true) && showBisectorsCheck;
+                const canShowBC = (currentStage === 1 ? revealedBisectors.BC : true) && showBisectorsCheck;
+                const canShowCA = (currentStage === 1 ? revealedBisectors.CA : true) && showBisectorsCheck;
+
+                if (canShowAB) drawPerpendicularBisector(points.A, points.B, '#f59e0b');
+                if (canShowBC) drawPerpendicularBisector(points.B, points.C, '#f59e0b');
+                if (canShowCA) drawPerpendicularBisector(points.C, points.A, '#f59e0b');
+
+                const countBisectors = (revealedBisectors.AB ? 1 : 0) + (revealedBisectors.BC ? 1 : 0) + (revealedBisectors.CA ? 1 : 0);
+
+                // Stage 1 Step 3: Draw highlighted intersection pulse target for students to click
+                if (currentStage === 1 && countBisectors === 3 && !foundCircumcenter) {
+                    ctx.save();
+                    const pulseRadius = 12 + Math.sin(Date.now() / 180) * 4;
+
+                    // Glowing ring around intersection point
+                    ctx.strokeStyle = '#f43f5e';
+                    ctx.lineWidth = 2.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.arc(circumcenter.x, circumcenter.y, pulseRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // Filled target circle
+                    ctx.fillStyle = 'rgba(244, 63, 94, 0.35)';
+                    ctx.beginPath();
+                    ctx.arc(circumcenter.x, circumcenter.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Center point
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    ctx.arc(circumcenter.x, circumcenter.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Guide text tag on canvas
+                    ctx.font = 'bold 12px "Noto Sans KR", sans-serif';
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.fillText('교점(외심 O)을 클릭하세요!', circumcenter.x + 14, circumcenter.y - 10);
+                    ctx.restore();
+
+                    // Keep animation loop active for pulse effect
+                    requestAnimationFrame(drawGeometry);
+                }
+
+                const canShowO = (currentStage === 1 ? foundCircumcenter : true) && !isDegenerate;
+
+                // Draw Circumcircle
+                if (canShowO && showCircleCheck && circumradius > 0) {
+                    ctx.save();
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.arc(circumcenter.x, circumcenter.y, circumradius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.03)';
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Draw Distance Lines (OA, OB, OC)
+                if (canShowO && showRadiiCheck) {
+                    const showOA = currentStage === 1 ? revealedDistances.OA : true;
+                    const showOB = currentStage === 1 ? revealedDistances.OB : true;
+                    const showOC = currentStage === 1 ? revealedDistances.OC : true;
+
+                    ctx.save();
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+
+                    if (showOA) {
+                        ctx.strokeStyle = '#a855f7';
+                        ctx.beginPath();
+                        ctx.moveTo(circumcenter.x, circumcenter.y);
+                        ctx.lineTo(points.A.x, points.A.y);
+                        ctx.stroke();
+                    }
+                    if (showOB) {
+                        ctx.strokeStyle = '#a855f7';
+                        ctx.beginPath();
+                        ctx.moveTo(circumcenter.x, circumcenter.y);
+                        ctx.lineTo(points.B.x, points.B.y);
+                        ctx.stroke();
+                    }
+                    if (showOC) {
+                        ctx.strokeStyle = '#a855f7';
+                        ctx.beginPath();
+                        ctx.moveTo(circumcenter.x, circumcenter.y);
+                        ctx.lineTo(points.C.x, points.C.y);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+
+                // Draw Circumcenter O
+                if (canShowO) {
+                    ctx.save();
+                    ctx.shadowColor = '#f43f5e';
+                    ctx.shadowBlur = 12;
+
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    ctx.arc(circumcenter.x, circumcenter.y, 7, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+
+                    // Step 4 Selection highlight for O
+                    if (step4SelectedPoint === 'O') {
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = '#a855f7';
+                        ctx.beginPath();
+                        ctx.arc(circumcenter.x, circumcenter.y, 14, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.shadowBlur = 0;
+                    ctx.fillText('O (외심)', circumcenter.x + 10, circumcenter.y - 10);
+                    ctx.restore();
+                }
+            }
+
+            // Draw Vertices A, B, C
+            ['A', 'B', 'C'].forEach(key => {
+                const p = points[key];
+                if (!p) return;
+
+                const isHovered = (hoverPointKey === key);
+                const isDragged = (draggingPointKey === key);
+                const isStep4Selected = (step4SelectedPoint === key);
+
+                ctx.save();
+                if (isHovered || isDragged || isStep4Selected) {
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 15;
+                }
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, isDragged ? POINT_RADIUS + 3 : (isHovered ? POINT_RADIUS + 2 : POINT_RADIUS), 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Draw Step 4 active selection ring
+                if (isStep4Selected) {
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#a855f7';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, POINT_RADIUS + 7, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.font = 'bold 15px "Outfit", sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.fillText(p.label, p.x + 12, p.y - 8);
+                ctx.restore();
+            });
+        }
+
+        function distToSegment(px, py, x1, y1, x2, y2) {
+            const l2 = (x1 - x2) ** 2 + (y1 - y2) ** 2;
+            if (l2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+        }
+
+        function switchStage(stageNum) {
+            playSound('click');
+            currentStage = stageNum;
+
+            for (let i = 1; i <= 4; i++) {
+                const tab = document.getElementById(`tab-stage-${i}`);
+                const card = document.getElementById(`stage-card-${i}`);
+
+                if (i === stageNum) {
+                    tab.className = "flex-1 md:flex-none px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 bg-sky-500 text-white shadow-md whitespace-nowrap";
+                    card.classList.remove('hidden');
+                } else {
+                    tab.className = "flex-1 md:flex-none px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 whitespace-nowrap";
+                    card.classList.add('hidden');
+                }
+            }
+
+            // If switching to later stages and triangle isn't set, create default preset
+            if (stageNum >= 3 && stage1PointCount < 3) {
+                setTrianglePreset('acute');
+            }
+
+            drawGeometry();
+        }
+
+        function unlockStageWithPassword(stageNum) {
+            if (stageNum === 2) {
+                const pass = document.getElementById('stage2-password-input').value.trim();
+                if (pass === '해방') {
+                    playSound('unlock');
+                    isStage2Unlocked = true;
+                    document.getElementById('stage2-lock-overlay').classList.add('hidden');
+                    document.getElementById('stage2-unlocked-content').classList.remove('hidden');
+                    document.getElementById('lock-icon-2').className = "fa-solid fa-lock-open text-xs text-emerald-400";
+                    document.getElementById('stage2-status-badge').innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 탐구 진행 중`;
+                    document.getElementById('stage2-status-badge').className = "text-xs font-bold text-emerald-400 flex items-center gap-1";
+                    switchStage(2);
+                } else {
+                    playSound('wrong');
+                    showAlert('암호가 올바르지 않습니다.\n초성 힌트(ㅎㅂ)를 참고해 정답 단어(해방)를 입력해 보세요!', '암호 오류', 'wrong');
+                }
+            } else if (stageNum === 3) {
+                const pass = document.getElementById('stage3-password-input').value.trim();
+                if (pass === '사랑') {
+                    playSound('unlock');
+                    isStage3Unlocked = true;
+                    document.getElementById('stage3-lock-overlay').classList.add('hidden');
+                    document.getElementById('stage3-unlocked-content').classList.remove('hidden');
+                    document.getElementById('lock-icon-3').className = "fa-solid fa-lock-open text-xs text-emerald-400";
+                    document.getElementById('stage3-status-badge').innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 탐구 진행 중`;
+                    document.getElementById('stage3-status-badge').className = "text-xs font-bold text-amber-400 flex items-center gap-1";
+                    switchStage(3);
+                } else {
+                    playSound('wrong');
+                    showAlert('암호가 올바르지 않습니다.\n초성 힌트(ㅅㄹ)를 참고해 정답 단어(사랑)를 입력해 보세요!', '암호 오류', 'wrong');
+                }
+            } else if (stageNum === 4) {
+                const pass = document.getElementById('stage4-password-input').value.trim();
+                if (pass === '방해') {
+                    playSound('unlock');
+                    isStage4Unlocked = true;
+                    document.getElementById('stage4-lock-overlay').classList.add('hidden');
+                    document.getElementById('stage4-unlocked-content').classList.remove('hidden');
+                    document.getElementById('lock-icon-4').className = "fa-solid fa-lock-open text-xs text-emerald-400";
+                    document.getElementById('stage4-status-badge').innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 탐구 진행 중`;
+                    document.getElementById('stage4-status-badge').className = "text-xs font-bold text-rose-400 flex items-center gap-1";
+                    switchStage(4);
+                } else {
+                    playSound('wrong');
+                    showAlert('암호가 올바르지 않습니다.\n초성 힌트(ㅂㅎ)를 참고해 정답 단어(방해)를 입력해 보세요!', '암호 오류', 'wrong');
+                }
+            }
+        }
+
+        function resetStage1Canvas() {
+            playSound('click');
+            points.A = null;
+            points.B = null;
+            points.C = null;
+            stage1PointCount = 0;
+            revealedBisectors = { AB: false, BC: false, CA: false };
+            foundCircumcenter = false;
+            revealedDistances = { OA: false, OB: false, OC: false };
+            step4SelectedPoint = null;
+            draggingPointKey = null;
+            hoverPointKey = null;
+
+            const resultBox = document.getElementById('stage1-result-box');
+            if (resultBox) resultBox.classList.add('hidden');
+            const badge = document.getElementById('stage1-status-badge');
+            if (badge) {
+                badge.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 탐구 진행 중`;
+                badge.className = "text-xs font-bold text-amber-400 flex items-center gap-1";
+            }
+
+            const radios = document.getElementsByName('quiz1');
+            radios.forEach(r => r.checked = false);
+
+            updateStage1UI();
+            drawGeometry();
+        }
+
+        function updateStage1UI() {
+            const promptBadge = document.getElementById('canvas-prompt-badge');
+
+            const b0 = document.getElementById('step-badge-0');
+            const g0 = document.getElementById('step-guide-0');
+            const b1 = document.getElementById('step-badge-1');
+            const g1 = document.getElementById('step-guide-1');
+            const b2 = document.getElementById('step-badge-2');
+            const g2 = document.getElementById('step-guide-2');
+            const b3 = document.getElementById('step-badge-3');
+            const g3 = document.getElementById('step-guide-3');
+
+            if (!b0 || !g0 || !b1 || !g1 || !b2 || !g2 || !b3 || !g3) return;
+
+            // Guide 0: Create Points
+            b0.innerText = `${stage1PointCount}/3`;
+
+            if (stage1PointCount < 3) {
+                g0.className = "p-2.5 rounded-lg border border-sky-500/50 bg-sky-950/30 transition flex items-center justify-between step-active";
+                b0.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400";
+                if (promptBadge) promptBadge.innerHTML = `<i class="fa-solid fa-hand-pointer text-sky-400 animate-bounce"></i> 캔버스 위를 클릭해 꼭짓점 ${['A', 'B', 'C'][stage1PointCount]}를 찍으세요!`;
+
+                g1.className = "p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50";
+                b1.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500";
+                b1.innerText = "0/3";
+
+                g2.className = "p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50";
+                b2.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500";
+                b2.innerText = "대기";
+
+                g3.className = "p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50";
+                b3.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500";
+                b3.innerText = "0/3";
+                return;
+            } else {
+                g0.className = "p-2.5 rounded-lg border border-emerald-500/50 bg-emerald-950/20 text-emerald-300 transition flex items-center justify-between";
+                b0.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900 text-emerald-300";
+                b0.innerText = "완료 ✓";
+            }
+
+            // Guide 1: Perpendicular Bisectors
+            const countBisectors = (revealedBisectors.AB ? 1 : 0) + (revealedBisectors.BC ? 1 : 0) + (revealedBisectors.CA ? 1 : 0);
+            b1.innerText = `${countBisectors}/3`;
+
+            if (countBisectors < 3) {
+                g1.className = "p-2.5 rounded-lg border border-amber-500/50 bg-amber-950/30 transition flex items-center justify-between step-active";
+                b1.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900 text-amber-300";
+                if (promptBadge) promptBadge.innerHTML = `<i class="fa-solid fa-hand-pointer text-amber-400 animate-bounce"></i> 삼각형 세 변(AB, BC, CA)을 클릭해 수직이등분선을 그으세요!`;
+
+                g2.className = "p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50";
+                b2.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500";
+                b2.innerText = "대기";
+
+                g3.className = "p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50";
+                b3.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500";
+                b3.innerText = "0/3";
+                return;
+            } else {
+                g1.className = "p-2.5 rounded-lg border border-emerald-500/50 bg-emerald-950/20 text-emerald-300 transition flex items-center justify-between";
+                b1.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900 text-emerald-300";
+                b1.innerText = "완료 ✓";
+            }
+
+            // Guide 2: Find Circumcenter O
+            if (!foundCircumcenter) {
+                g2.className = "p-2.5 rounded-lg border border-rose-500/50 bg-rose-950/30 transition flex items-center justify-between step-active";
+                b2.innerText = "클릭 필요";
+                b2.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-rose-900 text-rose-300 animate-pulse";
+                if (promptBadge) promptBadge.innerHTML = `<i class="fa-solid fa-crosshairs text-rose-400 animate-bounce"></i> 수직이등분선들이 만나는 교점을 클릭해 외심 O를 확인하세요!`;
+
+                g3.className = "p-2.5 rounded-lg border border-slate-800 transition flex items-center justify-between opacity-50";
+                b3.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500";
+                b3.innerText = "0/3";
+                return;
+            } else {
+                g2.className = "p-2.5 rounded-lg border border-emerald-500/50 bg-emerald-950/20 text-emerald-300 transition flex items-center justify-between";
+                b2.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900 text-emerald-300";
+                b2.innerText = "발견 ✓";
+            }
+
+            // Guide 3: Distances OA, OB, OC
+            const countDist = (revealedDistances.OA ? 1 : 0) + (revealedDistances.OB ? 1 : 0) + (revealedDistances.OC ? 1 : 0);
+            b3.innerText = `${countDist}/3`;
+
+            if (countDist < 3) {
+                g3.className = "p-2.5 rounded-lg border border-purple-500/50 bg-purple-950/30 transition flex items-center justify-between step-active";
+                b3.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-purple-900 text-purple-300";
+                
+                if (step4SelectedPoint) {
+                    const targetText = (step4SelectedPoint === 'O') ? '꼭짓점(A, B, C)' : '외심 O';
+                    if (promptBadge) promptBadge.innerHTML = `<i class="fa-solid fa-hand-pointer text-purple-400 animate-bounce"></i> [${step4SelectedPoint}] 선택됨! 이제 ${targetText}를 클릭하여 선분을 완성하세요.`;
+                } else {
+                    if (promptBadge) promptBadge.innerHTML = `<i class="fa-solid fa-hand-pointer text-purple-400 animate-bounce"></i> 꼭짓점(A,B,C)과 외심 O를 순서대로 클릭하여 거리선(OA, OB, OC)을 연결하세요!`;
+                }
+            } else {
+                g3.className = "p-2.5 rounded-lg border border-emerald-500/50 bg-emerald-950/20 text-emerald-300 transition flex items-center justify-between";
+                b3.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900 text-emerald-300";
+                b3.innerText = "측정 완료 ✓";
+                if (promptBadge) promptBadge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> 외심 완성! 점 A, B, C를 자유롭게 드래그해 보세요.`;
+            }
+        }
+
+        function handleCanvasClick(coords) {
+            if (currentStage !== 1) return;
+
+            // Step 1: Click 3 points
+            if (stage1PointCount < 3) {
+                playSound('click');
+                if (stage1PointCount === 0) points.A = { x: coords.x, y: coords.y, label: 'A', color: '#38bdf8' };
+                else if (stage1PointCount === 1) points.B = { x: coords.x, y: coords.y, label: 'B', color: '#10b981' };
+                else if (stage1PointCount === 2) points.C = { x: coords.x, y: coords.y, label: 'C', color: '#f59e0b' };
+
+                stage1PointCount++;
+                updateStage1UI();
+                drawGeometry();
+                return;
+            }
+
+            // Step 2: Click 3 sides
+            const countBisectors = (revealedBisectors.AB ? 1 : 0) + (revealedBisectors.BC ? 1 : 0) + (revealedBisectors.CA ? 1 : 0);
+            if (countBisectors < 3) {
+                const dAB = distToSegment(coords.x, coords.y, points.A.x, points.A.y, points.B.x, points.B.y);
+                const dBC = distToSegment(coords.x, coords.y, points.B.x, points.B.y, points.C.x, points.C.y);
+                const dCA = distToSegment(coords.x, coords.y, points.C.x, points.C.y, points.A.x, points.A.y);
+
+                const threshold = 35;
+                if (dAB < threshold && !revealedBisectors.AB) {
+                    playSound('unlock');
+                    revealedBisectors.AB = true;
+                } else if (dBC < threshold && !revealedBisectors.BC) {
+                    playSound('unlock');
+                    revealedBisectors.BC = true;
+                } else if (dCA < threshold && !revealedBisectors.CA) {
+                    playSound('unlock');
+                    revealedBisectors.CA = true;
+                }
+
+                updateStage1UI();
+                drawGeometry();
+                return;
+            }
+
+            // Step 3: Click intersection to reveal circumcenter O
+            if (!foundCircumcenter) {
+                const distToO = Math.hypot(coords.x - circumcenter.x, coords.y - circumcenter.y);
+                if (distToO < 40) {
+                    playSound('correct');
+                    foundCircumcenter = true;
+                    updateStage1UI();
+                    drawGeometry();
+                } else {
+                    playSound('wrong');
+                }
+                return;
+            }
+
+            // Step 4: Click pair or vertices to reveal OA, OB, OC distance lines
+            const countDist = (revealedDistances.OA ? 1 : 0) + (revealedDistances.OB ? 1 : 0) + (revealedDistances.OC ? 1 : 0);
+            if (countDist < 3) {
+                const hitRadius = 28;
+                const dA = Math.hypot(coords.x - points.A.x, coords.y - points.A.y);
+                const dB = Math.hypot(coords.x - points.B.x, coords.y - points.B.y);
+                const dC = Math.hypot(coords.x - points.C.x, coords.y - points.C.y);
+                const dO = Math.hypot(coords.x - circumcenter.x, coords.y - circumcenter.y);
+
+                const dOA = distToSegment(coords.x, coords.y, circumcenter.x, circumcenter.y, points.A.x, points.A.y);
+                const dOB = distToSegment(coords.x, coords.y, circumcenter.x, circumcenter.y, points.B.x, points.B.y);
+                const dOC = distToSegment(coords.x, coords.y, circumcenter.x, circumcenter.y, points.C.x, points.C.y);
+
+                // Check direct line/vertex click first
+                const lineThreshold = 25;
+                if ((dA < lineThreshold || dOA < lineThreshold) && !revealedDistances.OA) {
+                    playSound('unlock');
+                    revealedDistances.OA = true;
+                    step4SelectedPoint = null;
+                    updateStage1UI();
+                    drawGeometry();
+                    return;
+                } else if ((dB < lineThreshold || dOB < lineThreshold) && !revealedDistances.OB) {
+                    playSound('unlock');
+                    revealedDistances.OB = true;
+                    step4SelectedPoint = null;
+                    updateStage1UI();
+                    drawGeometry();
+                    return;
+                } else if ((dC < lineThreshold || dOC < lineThreshold) && !revealedDistances.OC) {
+                    playSound('unlock');
+                    revealedDistances.OC = true;
+                    step4SelectedPoint = null;
+                    updateStage1UI();
+                    drawGeometry();
+                    return;
+                }
+
+                // Node selection fallback logic
+                let clickedKey = null;
+                if (dA < hitRadius) clickedKey = 'A';
+                else if (dB < hitRadius) clickedKey = 'B';
+                else if (dC < hitRadius) clickedKey = 'C';
+                else if (dO < hitRadius) clickedKey = 'O';
+
+                if (clickedKey) {
+                    if (!step4SelectedPoint) {
+                        step4SelectedPoint = clickedKey;
+                        playSound('click');
+                    } else if (step4SelectedPoint === clickedKey) {
+                        step4SelectedPoint = null;
+                        playSound('click');
+                    } else {
+                        const pair = [step4SelectedPoint, clickedKey].sort().join('');
+                        if (pair === 'AO') {
+                            if (!revealedDistances.OA) {
+                                revealedDistances.OA = true;
+                                playSound('unlock');
+                            }
+                        } else if (pair === 'BO') {
+                            if (!revealedDistances.OB) {
+                                revealedDistances.OB = true;
+                                playSound('unlock');
+                            }
+                        } else if (pair === 'CO') {
+                            if (!revealedDistances.OC) {
+                                revealedDistances.OC = true;
+                                playSound('unlock');
+                            }
+                        } else {
+                            playSound('wrong');
+                        }
+                        step4SelectedPoint = null;
+                    }
+                    updateStage1UI();
+                    drawGeometry();
+                }
+            }
+        }
+
+        function computeGeometry() {
+            if (!points.A || !points.B || !points.C) return;
+
+            const ax = points.A.x, ay = points.A.y;
+            const bx = points.B.x, by = points.B.y;
+            const cx = points.C.x, cy = points.C.y;
+
+            const D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+
+            if (Math.abs(D) < 1e-5) {
+                isDegenerate = true;
+                return;
+            }
+
+            isDegenerate = false;
+
+            const ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / D;
+            const uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / D;
+
+            circumcenter.x = ux;
+            circumcenter.y = uy;
+            circumradius = Math.hypot(ax - ux, ay - uy);
+
+            const a = Math.hypot(cx - bx, cy - by);
+            const b = Math.hypot(ax - cx, ay - cy);
+            const c = Math.hypot(bx - ax, by - ay);
+
+            const sides = [a, b, c].sort((p, q) => p - q);
+            const s1 = sides[0], s2 = sides[1], maxS = sides[2];
+
+            const sqDiff = (s1 * s1 + s2 * s2) - (maxS * maxS);
+            const threshold = maxS * maxS * 0.015;
+
+            if (Math.abs(sqDiff) <= threshold) {
+                triangleType = 'right';
+            } else if (sqDiff > threshold) {
+                triangleType = 'acute';
+            } else {
+                triangleType = 'obtuse';
+            }
+
+            updateUIInfo();
+        }
+
+        function updateUIInfo() {
+            if (isDegenerate || !points.A || !points.B || !points.C) return;
+
+            const distA = Math.hypot(points.A.x - circumcenter.x, points.A.y - circumcenter.y) / SCALE_FACTOR;
+            const distB = Math.hypot(points.B.x - circumcenter.x, points.B.y - circumcenter.y) / SCALE_FACTOR;
+            const distC = Math.hypot(points.C.x - circumcenter.x, points.C.y - circumcenter.y) / SCALE_FACTOR;
+            const radiusCm = circumradius / SCALE_FACTOR;
+
+            if (currentStage === 1 && (!foundCircumcenter || !revealedDistances.OA)) {
+                document.getElementById('dist-oa').innerText = revealedDistances.OA ? `${distA.toFixed(1)} cm` : '? cm';
+                document.getElementById('dist-ob').innerText = revealedDistances.OB ? `${distB.toFixed(1)} cm` : '? cm';
+                document.getElementById('dist-oc').innerText = revealedDistances.OC ? `${distC.toFixed(1)} cm` : '? cm';
+            } else {
+                document.getElementById('dist-oa').innerText = `${distA.toFixed(1)} cm`;
+                document.getElementById('dist-ob').innerText = `${distB.toFixed(1)} cm`;
+                document.getElementById('dist-oc').innerText = `${distC.toFixed(1)} cm`;
+            }
+
+            document.getElementById('radius-val').innerText = (foundCircumcenter || currentStage > 1) ? `${radiusCm.toFixed(1)}` : '?';
+
+            // Stage 3 Location Info
+            const badge = document.getElementById('current-triangle-badge');
+            const locText = document.getElementById('current-location-text');
+            const locDesc = document.getElementById('current-location-desc');
+
+            if (triangleType === 'acute') {
+                badge.innerText = '예각삼각형';
+                badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-700';
+                locText.innerText = '외심(O)의 위치: 삼각형 내부';
+                locDesc.innerText = '모든 내각이 90° 미만일 때 외심 O는 삼각형의 내부에 위치합니다.';
+            } else if (triangleType === 'right') {
+                badge.innerText = '직각삼각형';
+                badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-900/80 text-amber-300 border border-amber-700 animate-pulse';
+                locText.innerText = '외심(O)의 위치: 빗변의 중점 ★';
+                locDesc.innerText = '직각삼각형의 외심 O는 항상 가장 긴 변(빗변)의 한가운데(중점)에 존재합니다!';
+            } else {
+                badge.innerText = '둔각삼각형';
+                badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-purple-900/80 text-purple-300 border border-purple-700';
+                locText.innerText = '외심(O)의 위치: 삼각형 외부';
+                locDesc.innerText = '한 각이 90°보다 큰 둔각삼각형일 때 외심 O는 삼각형 바깥쪽에 위치합니다.';
+            }
+        }
+
+        function checkStage1Quiz() {
+            const selected = document.querySelector('input[name="quiz1"]:checked');
+            if (!selected) {
+                playSound('wrong');
+                showAlert('답안 항목을 선택해 주세요!', '선택 필요');
+                return;
+            }
+
+            if (selected.value === 'equal') {
+                playSound('correct');
+                document.getElementById('stage1-result-box').classList.remove('hidden');
+                document.getElementById('stage1-status-badge').innerHTML = `<i class="fa-solid fa-circle-check"></i> 미션 완료`;
+                document.getElementById('stage1-status-badge').className = "text-xs font-bold text-emerald-400 flex items-center gap-1";
+            } else {
+                playSound('wrong');
+                showAlert('다시 생각해 보세요!\n캔버스 아래 [실시간 수치 측정]에서 OA, OB, OC의 길이를 직접 비교해 보세요.', '다시 시도', 'wrong');
+            }
+        }
+
+        function checkStage2Quiz() {
+            const q1 = document.getElementById('blank-q1').value.trim().replace(/\s+/g, '');
+            const q2 = document.getElementById('blank-q2').value.trim().replace(/\s+/g, '');
+            const q3 = document.getElementById('blank-q3').value.trim().replace(/\s+/g, '');
+
+            const isQ1Ok = q1.includes('수직이등분선');
+            const isQ2Ok = q2.includes('꼭짓점');
+            const isQ3Ok = q3.includes('외접원');
+
+            if (isQ1Ok && isQ2Ok && isQ3Ok) {
+                playSound('correct');
+                document.getElementById('stage2-result-box').classList.remove('hidden');
+                document.getElementById('stage2-status-badge').innerHTML = `<i class="fa-solid fa-circle-check"></i> 미션 완료`;
+                document.getElementById('stage2-status-badge').className = "text-xs font-bold text-emerald-400 flex items-center gap-1";
+            } else {
+                playSound('wrong');
+                let errText = '일부 빈칸이 정확하지 않습니다.\n';
+                if (!isQ1Ok) errText += '• Q1: 변을 수직으로 2등분하는 선? (수직이등분선)\n';
+                if (!isQ2Ok) errText += '• Q2: 외심에서 이르는 거리가 같은 지점? (꼭짓점)\n';
+                if (!isQ3Ok) errText += '• Q3: 바깥에서 접하는 원? (외접원)';
+                showAlert(errText, '빈칸 확인 필요', 'wrong');
+            }
+        }
+
+        function checkStage3Quiz() {
+            const val = document.getElementById('quiz3-input').value.trim().replace(/\s+/g, '');
+            if (val.includes('빗변') && val.includes('중점')) {
+                playSound('correct');
+                document.getElementById('stage3-result-box').classList.remove('hidden');
+                document.getElementById('stage3-status-badge').innerHTML = `<i class="fa-solid fa-circle-check"></i> 미션 완료`;
+                document.getElementById('stage3-status-badge').className = "text-xs font-bold text-emerald-400 flex items-center gap-1";
+            } else {
+                playSound('wrong');
+                showAlert('정답이 아닙니다.\n상단 [직각] 버튼을 눌러 외심 O가 어느 변의 어디에 있는지 관찰해 보세요!\n(힌트: 빗변의 ...)', '힌트 참고', 'wrong');
+            }
+        }
+
+        function checkStage4Quizzes() {
+            const q1 = document.getElementById('app-q1').value.trim().replace(/\s+/g, '');
+            const q2 = document.getElementById('app-q2').value.trim();
+
+            const isQ1Correct = q1.includes('외심');
+            const isQ2Correct = (q2 === '5');
+
+            if (isQ1Correct && isQ2Correct) {
+                playSound('unlock');
+                document.getElementById('stage4-status-badge').innerHTML = `<i class="fa-solid fa-circle-check"></i> 탈출 성공`;
+                document.getElementById('stage4-status-badge').className = "text-xs font-bold text-emerald-400 flex items-center gap-1";
+
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+
+                document.getElementById('victory-modal').classList.remove('hidden');
+            } else {
+                playSound('wrong');
+                let hint = '';
+                if (!isQ1Correct) hint += '• [응용1] 세 지점에서 같은 거리에 있는 점은 외심입니다.\n';
+                if (!isQ2Correct) hint += '• [응용2] 직각삼각형의 외심은 빗변의 중점이므로, 반지름은 빗변 길이의 절반(10 / 2 = 5)입니다.';
+                showAlert('정답을 다시 확인해 주세요!\n\n' + hint, '최종 정답 확인', 'wrong');
+            }
+        }
+
+        function closeVictoryModal() {
+            document.getElementById('victory-modal').classList.add('hidden');
+        }
+
+        function setTrianglePreset(type) {
+            playSound('click');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2 + 10;
+            const size = Math.min(rect.width, rect.height) * 0.28;
+
+            stage1PointCount = 3;
+            foundCircumcenter = true;
+            revealedBisectors = { AB: true, BC: true, CA: true };
+            revealedDistances = { OA: true, OB: true, OC: true };
+
+            if (!points.A) points.A = { x: 0, y: 0, label: 'A', color: '#38bdf8' };
+            if (!points.B) points.B = { x: 0, y: 0, label: 'B', color: '#10b981' };
+            if (!points.C) points.C = { x: 0, y: 0, label: 'C', color: '#f59e0b' };
+
+            if (type === 'acute') {
+                points.A.x = centerX; points.A.y = centerY - size;
+                points.B.x = centerX - size * 0.85; points.B.y = centerY + size * 0.7;
+                points.C.x = centerX + size * 0.85; points.C.y = centerY + size * 0.7;
+            } else if (type === 'right') {
+                points.A.x = centerX - size; points.A.y = centerY + size * 0.6;
+                points.B.x = centerX - size; points.B.y = centerY - size * 0.6;
+                points.C.x = centerX + size; points.C.y = centerY + size * 0.6;
+            } else if (type === 'obtuse') {
+                points.A.x = centerX - size * 0.2; points.A.y = centerY + size * 0.1;
+                points.B.x = centerX - size * 1.1; points.B.y = centerY + size * 0.85;
+                points.C.x = centerX + size * 1.1; points.C.y = centerY + size * 0.85;
+            }
+
+            updateStage1UI();
+            drawGeometry();
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            if (points.A && points.B && points.C) {
+                const margin = 20;
+                ['A', 'B', 'C'].forEach(key => {
+                    if (points[key]) {
+                        points[key].x = Math.max(margin, Math.min(rect.width - margin, points[key].x));
+                        points[key].y = Math.max(margin, Math.min(rect.height - margin, points[key].y));
+                    }
+                });
+            }
+
+            drawGeometry();
+        }
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function findHitPointKey(coords) {
+            if (stage1PointCount < 3) return null;
+            for (let key of ['A', 'B', 'C']) {
+                const p = points[key];
+                if (p) {
+                    const dist = Math.hypot(p.x - coords.x, p.y - coords.y);
+                    if (dist <= POINT_RADIUS + 8) return key;
+                }
+            }
+            return null;
+        }
+
+        let isPointerDown = false;
+        let startCoords = null;
+
+        canvas.addEventListener('pointerdown', (e) => {
+            isPointerDown = true;
+            const coords = getCanvasCoords(e);
+            startCoords = coords;
+
+            const hitKey = findHitPointKey(coords);
+            if (hitKey) {
+                draggingPointKey = hitKey;
+                canvas.setPointerCapture(e.pointerId);
+                drawGeometry();
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            const coords = getCanvasCoords(e);
+            if (draggingPointKey) {
+                const rect = canvas.getBoundingClientRect();
+                const margin = 15;
+                points[draggingPointKey].x = Math.max(margin, Math.min(rect.width - margin, coords.x));
+                points[draggingPointKey].y = Math.max(margin, Math.min(rect.height - margin, coords.y));
+                drawGeometry();
+            } else {
+                const hitKey = findHitPointKey(coords);
+                if (hitKey !== hoverPointKey) {
+                    hoverPointKey = hitKey;
+                    canvas.style.cursor = hoverPointKey ? 'pointer' : (stage1PointCount < 3 ? 'crosshair' : 'grab');
+                    drawGeometry();
+                }
+            }
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            const coords = getCanvasCoords(e);
+            if (draggingPointKey) {
+                draggingPointKey = null;
+                try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+                drawGeometry();
+            } else if (isPointerDown && startCoords) {
+                const moveDist = Math.hypot(coords.x - startCoords.x, coords.y - startCoords.y);
+                if (moveDist < 5) {
+                    handleCanvasClick(coords);
+                }
+            }
+            isPointerDown = false;
+        });
+
+        canvas.addEventListener('pointercancel', () => {
+            draggingPointKey = null;
+            isPointerDown = false;
+            drawGeometry();
+        });
+
+        window.onload = function() {
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            updateStage1UI();
+            switchStage(1);
+        };
+    </script>
+</body>
+</html>
